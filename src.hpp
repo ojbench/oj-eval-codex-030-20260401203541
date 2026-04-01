@@ -1,10 +1,14 @@
 // OJ Problem 2569 - Rule-based handwritten digit recognition
 // Implements judge(IMAGE_T&) returning 0-9 using simple CV heuristics.
 
-#include <bits/stdc++.h>
+#include <vector>
+#include <queue>
+#include <algorithm>
+#include <numeric>
+#include <cmath>
 using namespace std;
 
-typedef std::vector<std::vector<double>> IMAGE_T;
+typedef std::vector<std::vector<double> > IMAGE_T;
 
 static vector<vector<int>> binarize(const IMAGE_T &img) {
     int n = (int)img.size();
@@ -167,4 +171,3 @@ int judge(IMAGE_T &img) {
     if (density < 0.18) return 1;
     return 2;
 }
-
