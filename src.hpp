@@ -8,9 +8,7 @@
 #include <cmath>
 using namespace std;
 
-typedef std::vector<std::vector<double> > IMAGE_T;
-
-static vector<vector<int> > binarize(const IMAGE_T &img) {
+static vector<vector<int> > binarize(const std::vector<std::vector<double> > &img) {
     int n = (int)img.size();
     vector<vector<int> > b(n, vector<int>(n, 0));
     // Otsu-like threshold using mean; MNIST digits are white on black.
@@ -112,7 +110,7 @@ static vector<int> hproj(const vector<vector<int> > &b){
 
 static int argmax(const vector<int>& a){ return int(max_element(a.begin(), a.end()) - a.begin()); }
 
-int judge(IMAGE_T &img) {
+int judge(std::vector<std::vector<double> > &img) {
     if (img.empty() || img[0].empty()) return 0;
     vector<vector<int> > b0 = binarize(img);
     Box bb = bounding_box(b0);
