@@ -10,9 +10,9 @@ using namespace std;
 
 typedef std::vector<std::vector<double> > IMAGE_T;
 
-static vector<vector<int>> binarize(const IMAGE_T &img) {
+static vector<vector<int> > binarize(const IMAGE_T &img) {
     int n = (int)img.size();
-    vector<vector<int>> b(n, vector<int>(n, 0));
+    vector<vector<int> > b(n, vector<int>(n, 0));
     // Otsu-like threshold using mean; MNIST digits are white on black.
     double mean = 0.0; int cnt = 0;
     for (int i = 0; i < n; ++i) for (int j = 0; j < n; ++j) { mean += img[i][j]; cnt++; }
@@ -26,7 +26,7 @@ static vector<vector<int>> binarize(const IMAGE_T &img) {
 
 struct Box { int r0, c0, r1, c1; }; // inclusive bounds
 
-static Box bounding_box(const vector<vector<int>> &b) {
+static Box bounding_box(const vector<vector<int> > &b) {
     int n = (int)b.size();
     int r0 = n, c0 = n, r1 = -1, c1 = -1;
     for (int i = 0; i < n; ++i) for (int j = 0; j < n; ++j) if (b[i][j]) {
@@ -36,7 +36,7 @@ static Box bounding_box(const vector<vector<int>> &b) {
     return {r0, c0, r1, c1};
 }
 
-static vector<vector<int>> crop(const vector<vector<int>> &b, const Box &bb) {
+static vector<vector<int> > crop(const vector<vector<int> > &b, const Box &bb) {
     int h = bb.r1 - bb.r0 + 1, w = bb.c1 - bb.c0 + 1;
     vector<vector<int>> out(h, vector<int>(w, 0));
     for (int i = 0; i < h; ++i) for (int j = 0; j < w; ++j) out[i][j] = b[bb.r0+i][bb.c0+j];
