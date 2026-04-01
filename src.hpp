@@ -43,63 +43,67 @@ static vector<vector<int>> crop(const vector<vector<int>> &b, const Box &bb) {
     return out;
 }
 
-static int count_components(const vector<vector<int>> &b) {
-    int h = (int)b.size(), w = (int)b[0].size();
-    vector<vector<int>> vis(h, vector<int>(w, 0));
+static int count_components(const vector<vector<int> > &b) {
+    int h = (int)b.size();
+    int w = (int)b[0].size();
+    vector<vector<int> > vis(h, vector<int>(w, 0));
     int comps = 0; int dr[4] = {1,-1,0,0}, dc[4] = {0,0,1,-1};
     for (int i = 0; i < h; ++i) for (int j = 0; j < w; ++j) if (b[i][j] && !vis[i][j]) {
         comps++;
-        queue<pair<int,int>> q; q.push({i,j}); vis[i][j]=1;
+        queue<pair<int,int> > q; q.push(make_pair(i,j)); vis[i][j]=1;
         while(!q.empty()){
-            auto [r,c]=q.front(); q.pop();
+            pair<int,int> p = q.front(); q.pop();
+            int r = p.first, c = p.second;
             for(int k=0;k<4;k++){int nr=r+dr[k], nc=c+dc[k];
-                if(nr>=0&&nr<h&&nc>=0&&nc<w && b[nr][nc] && !vis[nr][nc]){vis[nr][nc]=1; q.push({nr,nc});}
+                if(nr>=0&&nr<h&&nc>=0&&nc<w && b[nr][nc] && !vis[nr][nc]){vis[nr][nc]=1; q.push(make_pair(nr,nc));}
             }
         }
     }
     return comps;
 }
 
-static int count_holes(const vector<vector<int>> &b) {
+static bool in_range_int(int r,int c,int h,int w){ return r>=0&&r<h&&c>=0&&c<w; }
+
+static int count_holes(const vector<vector<int> > &b) {
     // Holes = connected components of background inside the bounding box, excluding outer background.
-    int h = (int)b.size(), w = (int)b[0].size();
-    vector<vector<int>> vis(h, vector<int>(w, 0));
+    int h = (int)b.size();
+    int w = (int)b[0].size();
+    vector<vector<int> > vis(h, vector<int>(w, 0));
     int dr[4] = {1,-1,0,0}, dc[4] = {0,0,1,-1};
-    auto in=[&](int r,int c){return r>=0&&r<h&&c>=0&&c<w;};
     // Mark outer background via flood fill from border zeros.
-    queue<pair<int,int>> q;
-    for(int i=0;i<h;i++){ if(!b[i][0]){q.push({i,0}); vis[i][0]=1;} if(!b[i][w-1]){q.push({i,w-1}); vis[i][w-1]=1;} }
-    for(int j=0;j<w;j++){ if(!b[0][j]){q.push({0,j}); vis[0][j]=1;} if(!b[h-1][j]){q.push({h-1,j}); vis[h-1][j]=1;} }
-    while(!q.empty()){ auto [r,c]=q.front(); q.pop(); for(int k=0;k<4;k++){int nr=r+dr[k], nc=c+dc[k]; if(in(nr,nc) && !b[nr][nc] && !vis[nr][nc]){vis[nr][nc]=1; q.push({nr,nc});}} }
+    queue<pair<int,int> > q;
+    for(int i=0;i<h;i++){ if(!b[i][0]){q.push(make_pair(i,0)); vis[i][0]=1;} if(!b[i][w-1]){q.push(make_pair(i,w-1)); vis[i][w-1]=1;} }
+    for(int j=0;j<w;j++){ if(!b[0][j]){q.push(make_pair(0,j)); vis[0][j]=1;} if(!b[h-1][j]){q.push(make_pair(h-1,j)); vis[h-1][j]=1;} }
+    while(!q.empty()){ pair<int,int> p = q.front(); q.pop(); int r=p.first, c=p.second; for(int k=0;k<4;k++){int nr=r+dr[k], nc=c+dc[k]; if(in_range_int(nr,nc,h,w) && !b[nr][nc] && !vis[nr][nc]){vis[nr][nc]=1; q.push(make_pair(nr,nc));}} }
     // Any remaining zero region is a hole.
     int holes=0;
     for(int i=0;i<h;i++) for(int j=0;j<w;j++) if(!b[i][j] && !vis[i][j]){
         holes++;
-        queue<pair<int,int>> q2; q2.push({i,j}); vis[i][j]=1;
-        while(!q2.empty()){ auto [r,c]=q2.front(); q2.pop(); for(int k=0;k<4;k++){int nr=r+dr[k], nc=r+dc[k]; /* bug avoided below */ } }
+        queue<pair<int,int> > q2; q2.push(make_pair(i,j)); vis[i][j]=1;
+        while(!q2.empty()){ pair<int,int> p2 = q2.front(); q2.pop(); int r=p2.first, c=p2.second; for(int k=0;k<4;k++){int nr=r+dr[k], nc=c+dc[k]; if(in_range_int(nr,nc,h,w) && !b[nr][nc] && !vis[nr][nc]){vis[nr][nc]=1; q2.push(make_pair(nr,nc));}} }
     }
     // Re-do proper flood fill for holes (fixing typo):
     fill(vis.begin(), vis.end(), vector<int>(w, 0));
     // Mark outer again
-    for(int i=0;i<h;i++){ if(!b[i][0]){q.push({i,0}); vis[i][0]=1;} if(!b[i][w-1]){q.push({i,w-1}); vis[i][w-1]=1;} }
-    for(int j=0;j<w;j++){ if(!b[0][j]){q.push({0,j}); vis[0][j]=1;} if(!b[h-1][j]){q.push({h-1,j}); vis[h-1][j]=1;} }
-    while(!q.empty()){ auto [r,c]=q.front(); q.pop(); for(int k=0;k<4;k++){int nr=r+dr[k], nc=c+dc[k]; if(in(nr,nc) && !b[nr][nc] && !vis[nr][nc]){vis[nr][nc]=1; q.push({nr,nc});}} }
+    for(int i=0;i<h;i++){ if(!b[i][0]){q.push(make_pair(i,0)); vis[i][0]=1;} if(!b[i][w-1]){q.push(make_pair(i,w-1)); vis[i][w-1]=1;} }
+    for(int j=0;j<w;j++){ if(!b[0][j]){q.push(make_pair(0,j)); vis[0][j]=1;} if(!b[h-1][j]){q.push(make_pair(h-1,j)); vis[h-1][j]=1;} }
+    while(!q.empty()){ pair<int,int> p3 = q.front(); q.pop(); int r=p3.first, c=p3.second; for(int k=0;k<4;k++){int nr=r+dr[k], nc=c+dc[k]; if(in_range_int(nr,nc,h,w) && !b[nr][nc] && !vis[nr][nc]){vis[nr][nc]=1; q.push(make_pair(nr,nc));}} }
     holes=0;
     for(int i=0;i<h;i++) for(int j=0;j<w;j++) if(!b[i][j] && !vis[i][j]){
         holes++;
-        queue<pair<int,int>> q2; q2.push({i,j}); vis[i][j]=1;
-        while(!q2.empty()){ auto [r,c]=q2.front(); q2.pop(); for(int k=0;k<4;k++){int nr=r+dr[k], nc=c+dc[k]; if(in(nr,nc) && !b[nr][nc] && !vis[nr][nc]){vis[nr][nc]=1; q2.push({nr,nc});}} }
+        queue<pair<int,int> > q2; q2.push(make_pair(i,j)); vis[i][j]=1;
+        while(!q2.empty()){ pair<int,int> p4 = q2.front(); q2.pop(); int r=p4.first, c=p4.second; for(int k=0;k<4;k++){int nr=r+dr[k], nc=c+dc[k]; if(in_range_int(nr,nc,h,w) && !b[nr][nc] && !vis[nr][nc]){vis[nr][nc]=1; q2.push(make_pair(nr,nc));}} }
     }
     return holes;
 }
 
-static vector<int> vproj(const vector<vector<int>> &b){
+static vector<int> vproj(const vector<vector<int> > &b){
     int h=b.size(), w=b[0].size();
     vector<int> v(h,0);
     for(int i=0;i<h;i++){ int s=0; for(int j=0;j<w;j++) s+=b[i][j]; v[i]=s; }
     return v;
 }
-static vector<int> hproj(const vector<vector<int>> &b){
+static vector<int> hproj(const vector<vector<int> > &b){
     int h=b.size(), w=b[0].size();
     vector<int> v(w,0);
     for(int j=0;j<w;j++){ int s=0; for(int i=0;i<h;i++) s+=b[i][j]; v[j]=s; }
@@ -110,12 +114,14 @@ static int argmax(const vector<int>& a){ return int(max_element(a.begin(), a.end
 
 int judge(IMAGE_T &img) {
     if (img.empty() || img[0].empty()) return 0;
-    auto b0 = binarize(img);
+    vector<vector<int> > b0 = binarize(img);
     Box bb = bounding_box(b0);
-    auto bc = crop(b0, bb);
+    vector<vector<int> > bc = crop(b0, bb);
 
-    int h = bc.size(), w = bc[0].size();
-    auto vp = vproj(bc), hp = hproj(bc);
+    int h = (int)bc.size();
+    int w = (int)bc[0].size();
+    vector<int> vp = vproj(bc);
+    vector<int> hp = hproj(bc);
     int holes = count_holes(bc);
     int comps = count_components(bc);
 
